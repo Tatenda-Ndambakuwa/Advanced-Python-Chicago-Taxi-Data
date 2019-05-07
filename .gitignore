@@ -1,2 +1,6 @@
 
 *.jpg
+*.gif
+*.csv
+gifs/pickup.gif
+geospatial/taxi.csv
