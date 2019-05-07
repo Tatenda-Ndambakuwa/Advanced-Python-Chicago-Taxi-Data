@@ -1,14 +1,14 @@
 # Adv Python Project
 
 Description:
-
+Chicago Taxi data: Exploring Neighborhood Trends
 
 # Contributors:
-* asdas
-* sfsdf
-* sfdsd
-* adsada
-* sasda
+* Tatenda Ndambakuwa
+* Trevor Isaiah Mitchell
+* Seda Bilaloglu
+* Zhihan Li
+* Atakan Okan
 
 # Data
 
