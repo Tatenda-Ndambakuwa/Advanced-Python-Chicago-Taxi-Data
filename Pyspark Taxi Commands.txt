@@ -1,0 +1,87 @@
+module load python/gnu/3.6.5 
+module load spark/2.4.0
+
+OFFICIAL SPARK COMMANDS 
+
+from pyspark.sql.functions import to_timestamp
+from pyspark.sql.functions import hour
+from pyspark.sql.functions import year
+from pyspark.sql.functions import dayofweek
+from pyspark.sql.functions import month
+
+t = spark.read.csv('ChicagoTaxi.csv',header = True, inferSchema = True)
+
+
+p1 = t.withColumnRenamed('Pickup Community Area','pickup_community_area')
+p1 = p1.withColumnRenamed('Trip Start Timestamp','trip_start_timestamp')
+
+p2 = p1.select(to_timestamp(p1.trip_start_timestamp, 'MM/dd/yyyy hh:mm:ss a').alias('dt'),p1.pickup_community_area)
+p3 = p2.select(month(p2.dt).alias('month'),year(p2.dt).alias('year'), dayofweek(p2.dt).alias('dayofweek'),hour(p2.dt).alias('hour'),p1.pickup_community_area)
+
+p3.createOrReplaceTempView('p3')
+pickup_demand = spark.sql('SELECT count(*),month, year,dayofweek,hour,pickup_community_area FROM p3 GROUP BY month, year,dayofweek,hour,pickup_community_area') 
+
+
+pickup_demand.toPandas().to_csv("pickup_demand.csv", header=True)
+
+scp -r tim225@dumbo.hpc.nyu.edu:./pickup_demand.csv /Users/Master_Trevor/Documents/adv_py_proj
+
+df = pd.read_csv('pickup_demand.csv', index_col = 'Unnamed: 0')
+
+
+===========================================================
+
+t = spark.read.csv('ChicagoTaxi.csv',header = True, inferSchema = True)
+
+
+d1 = t.withColumnRenamed('Dropoff Community Area','dropoff_community_area')
+d1 = d1.withColumnRenamed('Trip Start Timestamp','trip_start_timestamp')
+
+d2 = d1.select(to_timestamp(d1.trip_start_timestamp, 'MM/dd/yyyy hh:mm:ss a').alias('dt'),d1.dropoff_community_area)
+d3 = d2.select(month(d2.dt).alias('month'),year(d2.dt).alias('year'), dayofweek(d2.dt).alias('dayofweek'),hour(d2.dt).alias('hour'),d1.dropoff_community_area)
+
+d3.createOrReplaceTempView('d3')
+destination_demand = spark.sql('SELECT count(*),month, year,dayofweek,hour,dropoff_community_area FROM d3 GROUP BY month, year,dayofweek,hour,dropoff_community_area') 
+
+
+destination_demand.toPandas().to_csv("destination_demand.csv", header=True)
+scp -r tim225@dumbo.hpc.nyu.edu:./destination_demand.csv /Users/Master_Trevor/Documents/adv_py_proj
+
+df = pd.read_csv('destination_demand.csv', index_col = 'Unnamed: 0')
+
+===========================================================
+#Euclidean Distance Calculations Local Solution
+ 
+count, timestamp, longitude, latitude
+ 
+Dropoff Centroid Latitude
+Dropoff Centroid Longitude
+
+
+e1 = t.withColumnRenamed('Pickup Community Area','pickup_community_area')
+e1 = e1.withColumnRenamed('Trip Start Timestamp','trip_start_timestamp')
+e1 = e1.withColumnRenamed('Pickup Centroid Latitude','pickup_latitude')
+e1 = e1.withColumnRenamed('Pickup Centroid Longitude','pickup_longitude')
+e1 = e1.withColumnRenamed('Dropoff Centroid Latitude','dropoff_latitude')
+e1 = e1.withColumnRenamed('Dropoff Centroid Longitude','dropoff_longitude')
+
+e2 = e1.select(to_timestamp(e1.trip_start_timestamp, 'MM/dd/yyyy hh:mm:ss a').alias('dt'),e1.pickup_community_area,e1.pickup_latitude, e1.pickup_longitude, e1.dropoff_latitude,e1.dropoff_longitude)
+e3 = e2.select(month(e2.dt).alias('month'),year(e2.dt).alias('year'), dayofweek(e2.dt).alias('dayofweek'),hour(e2.dt).alias('hour'),e1.pickup_community_area,e1.pickup_latitude, e1.pickup_longitude, e1.dropoff_latitude,e1.dropoff_longitude)
+
+e3.createOrReplaceTempView('e3')
+
+e4 = e3.filter(e3.year < 2018).filter(e3.year > 2016)
+e4.createOrReplaceTempView('e4')
+
+euc_dataset = spark.sql('SELECT count(*),month, year,dayofweek,hour,pickup_community_area,pickup_latitude,pickup_longitude,dropoff_latitude,dropoff_longitude FROM e4 WHERE GROUP BY month,year,dayofweek,hour,pickup_community_area,pickup_latitude,pickup_longitude,dropoff_latitude,dropoff_longitude')
+
+euc_dataset.toPandas().to_csv("euc_dataset.csv", header=True)
+scp -r tim225@dumbo.hpc.nyu.edu:./euc_dataset.csv /Users/Master_Trevor/Documents/adv_py_proj
+
+df = pd.read_csv('euc_dataset.csv', index_col = 'Unnamed: 0')
+
+
+
+hfs -getfacl hdfs:/user/bm106/pub/artist_term_large.csv | hfs -setfacl hdfs:/user/tim225/euc_dataset.csv
+
+bench.benchmark(spark,1,t = spark.read.csv('ChicagoTaxi.csv',header = True, inferSchema = True))
